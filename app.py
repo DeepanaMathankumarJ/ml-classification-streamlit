@@ -120,4 +120,123 @@ if test_df is not None:
             <div class="metric-card">
                 <h4>🏋️ Train Data Info</h4>
                 <p style="font-size: 16px; color: #6c757d;">(Train CSV not found in workspace)</p>
-                <hr style="margin:
+                <hr style="margin:5px 0;">
+                <p>Models pre-trained & loaded via joblib</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+    with col_d3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h4>⚙️ Active Model</h4>
+            <p style="font-size: 18px; font-weight: bold; color: #6610f2;">{model_name}</p>
+            <hr style="margin:5px 0;">
+            <p><b>Status:</b> Ready for Evaluation</p>
+            <p><b>Inference Mode:</b> No Retraining Required</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Tabs layout
+    tab_eval, tab_compare, tab_data = st.tabs(["📊 Evaluation", "⚖️ Model Comparison", "📂 Raw Data Explorer"])
+
+    if 'target' not in test_df.columns:
+        st.error("Error: The test dataset must contain a 'target' column!")
+    else:
+        X_test = test_df.drop(columns=['target'])
+        y_test = test_df['target']
+        
+        try:
+            model_path = model_files[model_name]
+            model = joblib.load(model_path)
+        except Exception as e:
+            st.error(f"Could not load model file for {model_name}. Ensure it's saved in the `model/` folder. Error: {e}")
+            st.stop()
+
+        # Predictions
+        y_pred = model.predict(X_test)
+        
+        if hasattr(model, "predict_proba"):
+            y_prob = model.predict_proba(X_test)
+            if y_prob.shape[1] == 2:
+                auc_score = roc_auc_score(y_test, y_prob[:, 1])
+            else:
+                auc_score = roc_auc_score(y_test, y_prob, multi_class='ovr', average='macro')
+        else:
+            auc_score = 0.0
+
+        # Metrics computation
+        acc = accuracy_score(y_test, y_pred)
+        prec = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+        rec = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+        f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+        mcc = matthews_corrcoef(y_test, y_pred)
+        
+        correct_count = (y_pred == y_test).sum()
+
+        with tab_eval:
+            st.markdown(f"### **{model_name}** classified **{correct_count}** of **{test_rows}** test samples correctly (**{acc*100:.1f}%**).")
+            
+            # Metric Cards Row
+            m1, m2, m3, m4, m5, m6 = st.columns(6)
+            m1.metric("ACCURACY", f"{acc:.4f}")
+            m2.metric("AUC", f"{auc_score:.4f}")
+            m3.metric("PRECISION", f"{prec:.4f}")
+            m4.metric("RECALL", f"{rec:.4f}")
+            m5.metric("F1 SCORE", f"{f1:.4f}")
+            m6.metric("MCC", f"{mcc:.4f}")
+            
+            st.markdown("---")
+            
+            col_cm, col_rep = st.columns([1.2, 1])
+            
+            with col_cm:
+                st.subheader("Confusion Matrix")
+                cm = confusion_matrix(y_test, y_pred)
+                fig, ax = plt.subplots(figsize=(5, 3.5))
+                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False, ax=ax)
+                ax.set_xlabel("Predicted Label")
+                ax.set_ylabel("Actual Label")
+                st.pyplot(fig)
+                
+            with col_rep:
+                st.subheader("Per-Class Report")
+                report_dict = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
+                report_df = pd.DataFrame(report_dict).transpose()
+                st.dataframe(report_df.style.format("{:.4f}"), use_container_width=True)
+
+        with tab_compare:
+            st.subheader("All Models Performance Comparison (Test Dataset)")
+            comparison_data = []
+            
+            for name, path in model_files.items():
+                try:
+                    m = joblib.load(path)
+                    preds = m.predict(X_test)
+                    probs = m.predict_proba(X_test) if hasattr(m, "predict_proba") else None
+                    if probs is not None:
+                        ascore = roc_auc_score(y_test, probs[:, 1] if probs.shape[1]==2 else probs, multi_class='ovr', average='macro')
+                    else:
+                        ascore = 0.0
+                        
+                    comparison_data.append({
+                        "Model Name": name,
+                        "Accuracy": round(accuracy_score(y_test, preds), 4),
+                        "AUC": round(ascore, 4),
+                        "Precision": round(precision_score(y_test, preds, average='weighted', zero_division=0), 4),
+                        "Recall": round(recall_score(y_test, preds, average='weighted', zero_division=0), 4),
+                        "F1 Score": round(f1_score(y_test, preds, average='weighted', zero_division=0), 4),
+                        "MCC": round(matthews_corrcoef(y_test, preds), 4)
+                    })
+                except Exception:
+                    pass
+            
+            comp_df = pd.DataFrame(comparison_data)
+            st.dataframe(comp_df, use_container_width=True)
+
+        with tab_data:
+            st.subheader("Test Dataset Preview")
+            st.dataframe(test_df, use_container_width=True)
+else:
+    st.warning("Please upload a test CSV dataset or enable bundled test data via the sidebar to initialize the dashboard.")
