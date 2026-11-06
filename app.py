@@ -21,9 +21,10 @@ st.markdown("""
     .metric-card {
         background-color: #f8f9fa;
         border: 1px solid #e9ecef;
-        padding: 15px;
+        padding: 18px;
         border-radius: 10px;
         text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -71,68 +72,33 @@ elif use_bundled:
     except FileNotFoundError:
         pass
 
-# Optional: Load train data if saved locally for comparison metrics
-train_df = None
-try:
-    # Assuming train data might be saved or loaded if available
-    # We can check a standard filename if you saved it during training phase
-    train_df = pd.read_csv("train_data.csv") 
-except FileNotFoundError:
-    pass
-
 if test_df is not None:
     test_rows = test_df.shape[0]
     test_features = test_df.shape[1] - 1  # excluding target
     test_classes = test_df['target'].nunique() if 'target' in test_df.columns else 0
 
-    # --- TOP METRIC TILES / CARDS FOR DATASET DETAILS ---
-    st.markdown("### 📋 Dataset Overview & Statistics")
+    # --- CLEAN TWO-COLUMN TOP METRIC TILES ---
+    st.markdown("### 📋 Dashboard Overview")
     
-    col_d1, col_d2, col_d3 = st.columns(3)
+    col_d1, col_d2 = st.columns(2)
     
     with col_d1:
         st.markdown(f"""
         <div class="metric-card">
-            <h4>🧪 Test Data Source</h4>
-            <p style="font-size: 18px; font-weight: bold; color: #0d6efd;">{test_source}</p>
-            <hr style="margin:5px 0;">
-            <p><b>Rows:</b> {test_rows} | <b>Features:</b> {test_features}</p>
-            <p><b>Target Classes:</b> {test_classes}</p>
+            <h4>🧪 Test Dataset Statistics</h4>
+            <p style="font-size: 16px; font-weight: bold; color: #0d6efd; margin: 5px 0;">Source: {test_source}</p>
+            <hr style="margin:8px 0;">
+            <p style="margin: 4px 0;"><b>Rows:</b> {test_rows} &nbsp;|&nbsp; <b>Features:</b> {test_features} &nbsp;|&nbsp; <b>Classes:</b> {test_classes}</p>
         </div>
         """, unsafe_allow_html=True)
         
     with col_d2:
-        if train_df is not None:
-            train_rows = train_df.shape[0]
-            train_features = train_df.shape[1] - 1
-            train_classes = train_df['target'].nunique() if 'target' in train_df.columns else 0
-            st.markdown(f"""
-            <div class="metric-card">
-                <h4>🏋️ Train Data Info</h4>
-                <p style="font-size: 18px; font-weight: bold; color: #198754;">Loaded Locally</p>
-                <hr style="margin:5px 0;">
-                <p><b>Rows:</b> {train_rows} | <b>Features:</b> {train_features}</p>
-                <p><b>Target Classes:</b> {train_classes}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div class="metric-card">
-                <h4>🏋️ Train Data Info</h4>
-                <p style="font-size: 16px; color: #6c757d;">(Train CSV not found in workspace)</p>
-                <hr style="margin:5px 0;">
-                <p>Models pre-trained & loaded via joblib</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-    with col_d3:
         st.markdown(f"""
         <div class="metric-card">
-            <h4>⚙️ Active Model</h4>
-            <p style="font-size: 18px; font-weight: bold; color: #6610f2;">{model_name}</p>
-            <hr style="margin:5px 0;">
-            <p><b>Status:</b> Ready for Evaluation</p>
-            <p><b>Inference Mode:</b> No Retraining Required</p>
+            <h4>⚙️ Active Deployment Model</h4>
+            <p style="font-size: 16px; font-weight: bold; color: #6610f2; margin: 5px 0;">{model_name}</p>
+            <hr style="margin:8px 0;">
+            <p style="margin: 4px 0;"><b>Status:</b> Ready for Evaluation &nbsp;|&nbsp; <b>Mode:</b> Pre-trained (Joblib)</p>
         </div>
         """, unsafe_allow_html=True)
 
