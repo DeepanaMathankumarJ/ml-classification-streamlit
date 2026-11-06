@@ -18,8 +18,8 @@ CLASS_NAMES = {0: "Malignant", 1: "Benign"}          # label -> readable name
 
 PROJECT_TITLE = "Breast Cancer Diagnosis"
 PROJECT_TAGLINE = "Comparing five machine-learning classifiers on the Wisconsin Diagnostic dataset"
-STUDENT_NAME = "Your Name"                           # <-- edit
-STUDENT_ID = "Your BITS ID"                          # <-- edit
+STUDENT_NAME = "Deepana Jayachandran"                           # <-- edit
+STUDENT_ID = "2026AK05687"                          # <-- edit
 
 DATASET = {
     "Name": "Breast Cancer Wisconsin (Diagnostic)",
