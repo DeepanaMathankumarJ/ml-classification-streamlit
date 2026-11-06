@@ -1,47 +1,24 @@
-# <Your Project Title>
+# Machine Learning Assignment 2 - Classification & Streamlit Deployment
 
-## a. Problem statement
-<2-4 sentences: what are you predicting, why does it matter, binary or multi-class?>
+**Course**: M.Tech (AIML) - Machine Learning  
+**Institution**: BITS Pilani (Work Integrated Learning Programmes Division)  
 
-## b. Dataset description
-- **Source:** <Kaggle / UCI link>
-- **Instances:** <N>  |  **Features:** <N>  |  **Target:** `<column>` (<classes>)
-- **Feature types:** <numeric / categorical, key columns>
-- **Class balance:** <e.g. 63% / 37%>
-- **Preprocessing:** median imputation + standard scaling for numeric features, one-hot encoding for categorical features; stratified 80/20 train-test split (random_state=42).
+---
 
-## c. GitHub repository link
-<https://github.com/your-username/your-repo>
+## a. Problem Statement
+The objective of this assignment is to develop, evaluate, and compare five distinct Machine Learning classification algorithms on a benchmark dataset. The evaluation is conducted across six performance metrics: Accuracy, Area Under ROC Curve (AUC), Precision, Recall, F1-Score, and Matthews Correlation Coefficient (MCC). The final trained models are serialized and integrated into an interactive web interface built with Streamlit, which is deployed live on Streamlit Community Cloud without retraining on user-uploaded test data.
 
-## d. Models used
+---
 
-### Comparison table
-| ML Model Name | Accuracy | AUC | Precision | Recall | F1 | MCC |
-|---|---|---|---|---|---|---|
-| Logistic Regression | | | | | | |
-| Decision Tree | | | | | | |
-| KNN | | | | | | |
-| Naive Bayes | | | | | | |
-| Support Vector Machine | | | | | | |
+## b. Dataset Description
+- **Dataset Name**: Breast Cancer Wisconsin (Diagnostic) Dataset
+- **Source**: `sklearn.datasets` (UCI Machine Learning Repository)
+- **Problem Type**: Binary Classification (0 = Malignant, 1 = Benign)
+- **Total Features**: 30 numeric, continuous features computed from digitized images of fine needle aspirates (FNA) of breast masses (e.g., radius, texture, perimeter, area, smoothness, compactness, concavity, symmetry).
+- **Total Instances**: 569 instances (meets requirement of >500 instances and >12 features).
+- **Split Ratio**: 80% Training Data, 20% Hold-out Test Data (`test_data.csv`).
 
-(Paste the table printed by `python train_models.py`.)
+---
 
-### Observations
-| ML Model Name | Observation about model performance |
-|---|---|
-| Logistic Regression | <e.g. strong baseline; features roughly linearly separable; high AUC> |
-| Decision Tree | <e.g. lower AUC, prone to overfitting even with max_depth=6; easy to interpret> |
-| KNN | <e.g. sensitive to scaling; high recall, slower at prediction time> |
-| Naive Bayes | <e.g. independence assumption violated by correlated features; fast but weaker MCC> |
-| Support Vector Machine | <e.g. RBF kernel captures non-linearity; top-tier AUC/MCC> |
-| **Overall winner** | <model + 1-2 lines justifying using MCC/AUC, not accuracy alone> |
-
-## How to run
-```bash
-pip install -r requirements.txt
-python train_models.py        # trains + saves models, test_data.csv
-streamlit run app.py
-```
-
-## Live app
-<https://your-app-name.streamlit.app>
+## c. GitHub Repository Link
+https://github.com/DeepanaMathankumarJ/ml-classification-streamlit.git
