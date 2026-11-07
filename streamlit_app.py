@@ -11,14 +11,14 @@ from sklearn.metrics import (
 )
 
 # =====================================================================
-# PROJECT CONFIG 
+# PROJECT CONFIG
 # =====================================================================
 TARGET_COL = "target"
 CLASS_NAMES = {0: "Rejected (Class 0)", 1: "Approved (Class 1)"}
 
 PROJECT_TITLE = "Australian Credit Approval"
 PROJECT_TAGLINE = "Comparing five machine-learning classifiers on the Statlog Australian Credit dataset"
-STUDENT_NAME = "Deepana Jayachandran"
+STUDENT_NAME = "Deepana Mathankumar J"
 STUDENT_ID = "2026AK05687"
 
 DATASET = {
@@ -62,7 +62,7 @@ MODEL_BADGES = {
 }
 
 # =====================================================================
-# PAGE SETUP + THEME-FRIENDLY CSS
+# PAGE SETUP + CSS
 # =====================================================================
 st.set_page_config(page_title=f"{PROJECT_TITLE} | ML Dashboard", page_icon="💳", layout="wide")
 
@@ -101,29 +101,41 @@ st.markdown("""
 def load_model(path):
     return joblib.load(path)
 
+@st.cache_resource
+def load_scaler():
+    try:
+        return joblib.load('model/scaler.joblib')
+    except Exception:
+        return None
 
 def align_features(model, X):
-    """Order the uploaded columns exactly as the model saw them during training."""
     cols = getattr(model, "feature_names_in_", None)
     if cols is None:
         return X
     missing = [c for c in cols if c not in X.columns]
     if missing:
-        raise ValueError(f"Missing feature columns: {missing[:6]}{' ...' if len(missing) > 6 else ''}")
+        raise ValueError(f"Missing feature columns: {missing[:6]}")
     return X[list(cols)]
 
-
-def evaluate(model, X, y):
-    """Return predictions, probabilities and the six required metrics."""
+def evaluate(model, X, y, model_name):
     Xa = align_features(model, X)
+    scaler = load_scaler()
+    if scaler is not None and model_name in ["Logistic Regression", "KNN", "Support Vector Machine"]:
+        try:
+            Xa = scaler.transform(Xa)
+        except Exception:
+            pass
+            
     y_pred = model.predict(Xa)
     y_prob = model.predict_proba(Xa)
     n_classes = y_prob.shape[1]
     avg = "binary" if n_classes == 2 else "weighted"
+    
     if n_classes == 2:
         auc = roc_auc_score(y, y_prob[:, 1])
     else:
         auc = roc_auc_score(y, y_prob, multi_class="ovr", average="weighted")
+        
     metrics = {
         "Accuracy": accuracy_score(y, y_pred),
         "AUC": auc,
@@ -134,10 +146,8 @@ def evaluate(model, X, y):
     }
     return y_pred, y_prob, metrics
 
-
 def label(v):
     return CLASS_NAMES.get(v, str(v))
-
 
 # =====================================================================
 # HERO HEADER
@@ -207,7 +217,7 @@ with tab_about:
             "1. Load dataset & stratified 80/20 split\n"
             "2. Train 5 classifiers on the training set\n"
             "3. Save trained models with `joblib`\n"
-            "4. This app loads the saved models and scores them on **test data only** - nothing is retrained here"
+            "4. This app loads saved models and scores them on **test data only**"
         )
 
     st.subheader("🤖 Models Used")
@@ -219,18 +229,15 @@ with tab_about:
 
     st.subheader("📏 Metrics Reported")
     st.markdown(
-        "**Accuracy** (overall correctness) - **AUC** (ranking quality across thresholds) - "
-        "**Precision** (of predicted positives, how many are right) - **Recall** (of actual positives, how many are found) - "
-        "**F1** (balance of precision and recall) - **MCC** (single balanced score, robust to class imbalance)."
+        "**Accuracy** - **AUC** - **Precision** - **Recall** - **F1** - **MCC**."
     )
     st.info("👈 Use the sidebar to choose a model, then open the **Evaluation** tab.")
 
 # ---------------------------------------------------------------------
-# Data-dependent tabs handler
+# DATA TABS HANDLER
 # ---------------------------------------------------------------------
 def need_data_message():
     st.warning("Upload a test CSV or tick **Use bundled test_data.csv** in the sidebar to see results.")
-
 
 data_ok = test_df is not None
 if data_ok and TARGET_COL not in test_df.columns:
@@ -246,21 +253,12 @@ if data_ok:
 
     try:
         models = {n: load_model(p) for n, p in MODEL_FILES.items()}
+        X_test = pd.get_dummies(X_test, drop_first=True)
         align_features(models[model_name], X_test)
-    except FileNotFoundError as e:
-        for t in (tab_eval, tab_compare, tab_data):
-            with t:
-                st.error(f"Model file not found - make sure the `model/` folder is in the repo. ({e})")
-        data_ok = False
-    except ValueError as e:
-        for t in (tab_eval, tab_compare, tab_data):
-            with t:
-                st.error(f"{e}. The uploaded CSV must have the same feature columns used for training.")
-        data_ok = False
     except Exception as e:
         for t in (tab_eval, tab_compare, tab_data):
             with t:
-                st.error(f"Could not load the models: {e}")
+                st.error(f"Error loading models or aligning features: {e}")
         data_ok = False
 
 if not data_ok and test_df is None:
@@ -272,7 +270,7 @@ if data_ok:
     # ----------------------------- TAB 2 - EVALUATION -----------------------------
     with tab_eval:
         model = models[model_name]
-        y_pred, y_prob, m = evaluate(model, X_test, y_test)
+        y_pred, y_prob, m = evaluate(model, X_test, y_test, model_name)
         correct = int((y_pred == y_test.values).sum())
 
         col_d1, col_d2 = st.columns(2)
@@ -328,13 +326,6 @@ if data_ok:
                                         output_dict=True, zero_division=0)
             st.dataframe(pd.DataFrame(rep).T.style.format("{:.4f}"))
 
-        if len(classes) == 2:
-            a, b = classes
-            st.markdown("#### Where does the model go wrong?")
-            e1, e2 = st.columns(2)
-            e1.metric(f"{label(a)} predicted as {label(b)}", int(cm[0, 1]))
-            e2.metric(f"{label(b)} predicted as {label(a)}", int(cm[1, 0]))
-
         st.markdown("#### 🔎 Predictions")
         out = test_df.copy()
         out["Actual"] = [label(v) for v in y_test]
@@ -357,7 +348,7 @@ if data_ok:
         st.subheader("All Models - Performance on the Selected Test Data")
         rows = []
         for n, mdl in models.items():
-            _, _, mm = evaluate(mdl, X_test, y_test)
+            _, _, mm = evaluate(mdl, X_test, y_test, n)
             rows.append({"ML Model Name": n, **{k: round(v, 4) for k, v in mm.items()}})
         comp = pd.DataFrame(rows).set_index("ML Model Name")
 
