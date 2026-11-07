@@ -1,7 +1,7 @@
 # Machine Learning Assignment 2 - Classification & Streamlit Deployment
 
 **Course**: M.Tech (AIML) - Machine Learning  
-**Institution**: BITS Pilani (Work Integrated Learning Programmes Division)  
+**Institution**: BITS Pilani
 
 ---
 
