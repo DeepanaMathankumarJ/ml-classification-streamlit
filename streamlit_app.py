@@ -109,13 +109,14 @@ def load_scaler():
         return None
 
 def align_features(model, X):
+    """One-hot encode and robustly reindex columns to match model training features."""
+    X_enc = pd.get_dummies(X, drop_first=True)
     cols = getattr(model, "feature_names_in_", None)
     if cols is None:
-        return X
-    missing = [c for c in cols if c not in X.columns]
-    if missing:
-        raise ValueError(f"Missing feature columns: {missing[:6]}")
-    return X[list(cols)]
+        return X_enc
+    # Reindex guarantees exact column alignment, padding missing with 0
+    X_enc = X_enc.reindex(columns=cols, fill_value=0)
+    return X_enc
 
 def evaluate(model, X, y, model_name):
     Xa = align_features(model, X)
@@ -253,7 +254,6 @@ if data_ok:
 
     try:
         models = {n: load_model(p) for n, p in MODEL_FILES.items()}
-        X_test = pd.get_dummies(X_test, drop_first=True)
         align_features(models[model_name], X_test)
     except Exception as e:
         for t in (tab_eval, tab_compare, tab_data):
